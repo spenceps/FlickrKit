@@ -1,10 +1,10 @@
-//
-//  FKImageUploadNetworkOperation.m
-//  FlickrKit
-//
-//  Created by David Casserly on 06/06/2013.
-//  Copyright (c) 2013 DevedUp Ltd. All rights reserved. http://www.devedup.com
-//
+	//
+	//  FKImageUploadNetworkOperation.m
+	//  FlickrKit
+	//
+	//  Created by David Casserly on 06/06/2013.
+	//  Copyright (c) 2013 DevedUp Ltd. All rights reserved. http://www.devedup.com
+	//
 
 #import "FKImageUploadNetworkOperation.h"
 #import "FlickrKit.h"
@@ -14,7 +14,7 @@
 #import "FKDUStreamUtil.h"
 
 @interface FKImageUploadNetworkOperation ()
-@property (nonatomic, strong) UIImage *image;
+@property (nonatomic, strong) NSData* imageData;
 @property (nonatomic, retain) NSString *tempFile;
 @property (nonatomic, copy) FKAPIImageUploadCompletion completion;
 @property (nonatomic, retain) NSDictionary *args;
@@ -27,7 +27,17 @@
 - (id) initWithImage:(UIImage *)image arguments:(NSDictionary *)args completion:(FKAPIImageUploadCompletion)completion; {
     self = [super init];
     if (self) {
-		self.image = image;
+		self.imageData = UIImageJPEGRepresentation(image, 1.0);
+		self.args = args;
+		self.completion = completion;
+    }
+    return self;
+}
+
+- (id) initWithImageData:(NSData *)imageData arguments:(NSDictionary *)args completion:(FKAPIImageUploadCompletion)completion{
+	self = [super init];
+    if (self) {
+		self.imageData = imageData;
 		self.args = args;
 		self.completion = completion;
     }
@@ -58,31 +68,31 @@
 			NSError *error = nil;
 			removeResult = [fileManager removeItemAtPath:uploadTempFilename error:&error];
 			NSAssert(removeResult, @"Should be able to remove temp file");
-        }        
+        }
         uploadTempFilename = nil;
     }
 }
 
 - (NSMutableURLRequest *) createRequest:(NSError **)error {
-	// Setup args
+		// Setup args
 	NSMutableDictionary *newArgs = self.args ? [NSMutableDictionary dictionaryWithDictionary:self.args] : [NSMutableDictionary dictionary];
 	newArgs[@"format"] = @"json";
-
-//#ifdef DEBUG
-//    [newArgs setObject:@"0" forKey:@"is_public"];
-//    [newArgs setObject:@"0" forKey:@"is_friend"];
-//    [newArgs setObject:@"0" forKey:@"is_family"];
-//    [newArgs setObject:@"2" forKey:@"hidden"];
-//#endif
+	
+		//#ifdef DEBUG
+		//    [newArgs setObject:@"0" forKey:@"is_public"];
+		//    [newArgs setObject:@"0" forKey:@"is_friend"];
+		//    [newArgs setObject:@"0" forKey:@"is_family"];
+		//    [newArgs setObject:@"2" forKey:@"hidden"];
+		//#endif
     
-    // Build a URL to the upload service
+		// Build a URL to the upload service
 	FKURLBuilder *urlBuilder = [[FKURLBuilder alloc] init];
 	NSDictionary *args = [urlBuilder signedArgsFromParameters:newArgs method:FKHttpMethodPOST url:[NSURL URLWithString:@"https://api.flickr.com/services/upload/"]];
 	
-	// Form multipart needs a boundary 
+		// Form multipart needs a boundary
 	NSString *multipartBoundary = FKGenerateUUID();
 	
-	// File name
+		// File name
 	NSString *inFilename = [self.args valueForKey:@"title"];
 	if (!inFilename) {
         inFilename = @" "; // Leave space so that the below still uploads a file
@@ -90,7 +100,7 @@
         inFilename = [inFilename stringByReplacingOccurrencesOfString:@" " withString:@""];
     }
     
-    // The multipart opening string
+		// The multipart opening string
 	NSMutableString *multipartOpeningString = [NSMutableString string];
 	for (NSString *key in args.allKeys) {
 		[multipartOpeningString appendFormat:@"--%@\r\nContent-Disposition: form-data; name=\"%@\"\r\n\r\n%@\r\n", multipartBoundary, key, [args valueForKey:key]];
@@ -98,38 +108,38 @@
     [multipartOpeningString appendFormat:@"--%@\r\nContent-Disposition: form-data; name=\"photo\"; filename=\"%@\"\r\n", multipartBoundary, inFilename];
     [multipartOpeningString appendFormat:@"Content-Type: %@\r\n\r\n", @"image/jpeg"];
 	
-	// The multipart closing string
+		// The multipart closing string
 	NSMutableString *multipartClosingString = [NSMutableString string];
 	[multipartClosingString appendFormat:@"\r\n--%@--", multipartBoundary];
     
-	// The temp file to write this multipart to
+		// The temp file to write this multipart to
 	NSString *tempFileName = [NSTemporaryDirectory() stringByAppendingFormat:@"%@.%@", @"FKFlickrTempFile", FKGenerateUUID()];
-	self.tempFile = tempFileName;	
+	self.tempFile = tempFileName;
 	
-	// Output stream is the file... 
+		// Output stream is the file...
     NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:tempFileName append:NO];
     [outputStream open];
 	
-	// Input stream is the image
-	NSData *imgData = UIImageJPEGRepresentation(self.image, 1.0);
-	NSInputStream *inImageStream = [[NSInputStream alloc] initWithData:imgData];
+		// Input stream is the image
 	
-	// Write the contents to the streams... don't cross the streams !
+	NSInputStream *inImageStream = [[NSInputStream alloc] initWithData:self.imageData];
+	
+		// Write the contents to the streams... don't cross the streams !
 	[FKDUStreamUtil writeMultipartStartString:multipartOpeningString imageStream:inImageStream toOutputStream:outputStream closingString:multipartClosingString];
-
-	// Get the file size
+	
+		// Get the file size
     NSDictionary *fileInfo = [[NSFileManager defaultManager] attributesOfItemAtPath:tempFileName error:error];
     NSNumber *fileSize = nil;
     if (fileInfo) {
         fileSize = [fileInfo objectForKey:NSFileSize];
         self.fileSize = [fileSize integerValue];
     } else {
-        //we have the error populated
+			//we have the error populated
         return nil;
-    }	
-
-    // Now the input stream for the request is the file just created
-	NSInputStream *inputStream = [NSInputStream inputStreamWithFileAtPath:tempFileName];	
+    }
+	
+		// Now the input stream for the request is the file just created
+	NSInputStream *inputStream = [NSInputStream inputStreamWithFileAtPath:tempFileName];
 	
 	NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:@"https://api.flickr.com/services/upload/"]];
 	[request setHTTPMethod:@"POST"];
@@ -174,7 +184,7 @@
 
 - (void) connection:(NSURLConnection *)connection didSendBodyData:(NSInteger)bytesWritten totalBytesWritten:(NSInteger)totalBytesWritten totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite {
 	
-    // Calculate the progress
+		// Calculate the progress
     self.uploadProgress = (CGFloat) totalBytesWritten / (CGFloat) self.fileSize;
     
 #ifdef DEBUG
