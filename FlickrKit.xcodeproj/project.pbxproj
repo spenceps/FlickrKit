@@ -1898,7 +1898,7 @@
 			name = FlickrKitTests;
 			productName = FlickrKitTests;
 			productReference = 552D919A1753F8F000BE3FEA /* FlickrKitTests.octest */;
-			productType = "com.apple.product-type.bundle";
+			productType = "com.apple.product-type.bundle.ocunit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -1907,6 +1907,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = FK;
+				LastTestingUpgradeCheck = 0600;
 				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = "DevedUp Ltd";
 			};

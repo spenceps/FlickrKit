@@ -39,7 +39,7 @@
 		valid = NO;
 		[errorDescription appendString:@"'title', "];
 	}
-	if(!self.description) {
+	if(!self.description2) {
 		valid = NO;
 		[errorDescription appendString:@"'description', "];
 	}
@@ -61,8 +61,8 @@
 	if(self.title) {
 		[args setValue:self.title forKey:@"title"];
 	}
-	if(self.description) {
-		[args setValue:self.description forKey:@"description"];
+	if(self.description2) {
+		[args setValue:self.description2 forKey:@"description"];
 	}
 
     return [args copy];
